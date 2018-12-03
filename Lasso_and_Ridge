@@ -1,0 +1,741 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "    Ben Christensen\n",
+    "    Math 402\n",
+    "    November 30, 2018\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 56,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import statsmodels.api as sm\n",
+    "import numpy as np\n",
+    "from sklearn import linear_model\n",
+    "from sklearn.model_selection import train_test_split, KFold, cross_val_score\n",
+    "from itertools import combinations\n",
+    "from scipy import linalg as la\n",
+    "from statsmodels.regression.linear_model import OLS"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style>\n",
+       "    .dataframe thead tr:only-child th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: left;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>wage</th>\n",
+       "      <th>educ</th>\n",
+       "      <th>exper</th>\n",
+       "      <th>tenure</th>\n",
+       "      <th>nonwhite</th>\n",
+       "      <th>female</th>\n",
+       "      <th>married</th>\n",
+       "      <th>numdep</th>\n",
+       "      <th>smsa</th>\n",
+       "      <th>northcen</th>\n",
+       "      <th>...</th>\n",
+       "      <th>trcommpu</th>\n",
+       "      <th>trade</th>\n",
+       "      <th>services</th>\n",
+       "      <th>profserv</th>\n",
+       "      <th>profocc</th>\n",
+       "      <th>clerocc</th>\n",
+       "      <th>servocc</th>\n",
+       "      <th>lwage</th>\n",
+       "      <th>expersq</th>\n",
+       "      <th>tenursq</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>3.10</td>\n",
+       "      <td>11</td>\n",
+       "      <td>2</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1.131402</td>\n",
+       "      <td>4</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>3.24</td>\n",
+       "      <td>12</td>\n",
+       "      <td>22</td>\n",
+       "      <td>2</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>3</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1.175573</td>\n",
+       "      <td>484</td>\n",
+       "      <td>4</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>3.00</td>\n",
+       "      <td>11</td>\n",
+       "      <td>2</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1.098612</td>\n",
+       "      <td>4</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>6.00</td>\n",
+       "      <td>8</td>\n",
+       "      <td>44</td>\n",
+       "      <td>28</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1.791759</td>\n",
+       "      <td>1936</td>\n",
+       "      <td>784</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>5.30</td>\n",
+       "      <td>12</td>\n",
+       "      <td>7</td>\n",
+       "      <td>2</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1.667707</td>\n",
+       "      <td>49</td>\n",
+       "      <td>4</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>5 rows × 24 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   wage  educ  exper  tenure  nonwhite  female  married  numdep  smsa  \\\n",
+       "0  3.10    11      2       0         0       1        0       2     1   \n",
+       "1  3.24    12     22       2         0       1        1       3     1   \n",
+       "2  3.00    11      2       0         0       0        0       2     0   \n",
+       "3  6.00     8     44      28         0       0        1       0     1   \n",
+       "4  5.30    12      7       2         0       0        1       1     0   \n",
+       "\n",
+       "   northcen   ...     trcommpu  trade  services  profserv  profocc  clerocc  \\\n",
+       "0         0   ...            0      0         0         0        0        0   \n",
+       "1         0   ...            0      0         1         0        0        0   \n",
+       "2         0   ...            0      1         0         0        0        0   \n",
+       "3         0   ...            0      0         0         0        0        1   \n",
+       "4         0   ...            0      0         0         0        0        0   \n",
+       "\n",
+       "   servocc     lwage  expersq  tenursq  \n",
+       "0        0  1.131402        4        0  \n",
+       "1        1  1.175573      484        4  \n",
+       "2        0  1.098612        4        0  \n",
+       "3        0  1.791759     1936      784  \n",
+       "4        0  1.667707       49        4  \n",
+       "\n",
+       "[5 rows x 24 columns]"
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df = pd.read_csv(\"wages.csv\")\n",
+    "df.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 4.18"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "def ridge(lmbda, X, Y):\n",
+    "    \"\"\"Perform an OLS regression with L^2 regularization \n",
+    "    (the ridge method)\n",
+    "    \n",
+    "    Parameters:\n",
+    "        lmbda (float): regularization parameter\n",
+    "        X ((n,d) ndarray): feature data\n",
+    "        Y ((n,1) ndarray): dependent var. data\n",
+    "    \n",
+    "    Returns:\n",
+    "        Bhat ((d,1) ndarray): minimizer of the regularized regression\n",
+    "    \"\"\"\n",
+    "    U, S, Vh = la.svd(X, full_matrices=False)\n",
+    "    \n",
+    "    for i, s in enumerate(S):\n",
+    "        if s < 1e-5:\n",
+    "            S[i] = 0\n",
+    "        else:\n",
+    "            S[i] = 1/s\n",
+    "    \n",
+    "    return Vh.T @ np.diag(S) @ U.T @ Y\n",
+    "    "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[ 0.47588912  0.15785767 -0.25481063 -1.92333271  0.09551804]\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "array([ 0.37679126,  0.16958451,  0.00056444, -0.02410082,  0.02483015])"
+      ]
+     },
+     "execution_count": 13,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "from scipy.optimize import minimize\n",
+    "def fun(beta,x,y,lam):\n",
+    "    return np.linalg.norm(y-x@beta)**2+lam*np.linalg.norm(beta)**2\n",
+    "\n",
+    "def sol(x,y,lam):\n",
+    "    return minimize(fun,ridge(lam,x,y),args=(x,y,lam))['x']\n",
+    "\n",
+    "X=df[['educ','tenure','nonwhite','female','numdep']]\n",
+    "Y=df['wage']\n",
+    "print(ridge(7,np.array(X),np.array(Y)))\n",
+    "sol(np.array(X),np.array(Y),7000)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 4.19"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 28,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "df[\"female*married\"] = df[\"female\"]*df[\"married\"]\n",
+    "df[\"intercept\"] = 1"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 34,
+   "metadata": {
+    "scrolled": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "k = -5\n",
+      "Bhat1: [-0.34413527  0.56308905  0.02091295  0.12976128  1.73557801 -2.3578156\n",
+      "  0.08909389 -0.2142343  -2.56638478]\n",
+      "Bhat2: [-0.34413527  0.56308905  0.02091295  0.12976128  1.73557801 -2.3578156\n",
+      "  0.08909389 -0.2142343  -2.56638478]\n",
+      "Bhat3: [-0.34413616  0.56308895  0.02091294  0.12976129  1.7355772  -2.35781434\n",
+      "  0.08909384 -0.21423432 -2.56638269]\n",
+      "k = -4\n",
+      "Bhat1: [-0.34413527  0.56308905  0.02091295  0.12976128  1.73557801 -2.3578156\n",
+      "  0.08909389 -0.2142343  -2.56638478]\n",
+      "Bhat2: [-0.34413527  0.56308905  0.02091295  0.12976128  1.73557801 -2.3578156\n",
+      "  0.08909389 -0.2142343  -2.56638478]\n",
+      "Bhat3: [-0.34414422  0.56308805  0.02091285  0.12976135  1.73556986 -2.35780296\n",
+      "  0.08909341 -0.2142345  -2.5663638 ]\n",
+      "k = -3\n",
+      "Bhat1: [-0.34422483  0.56307903  0.0209119   0.12976206  1.73549618 -2.35768896\n",
+      "  0.08908913 -0.2142364  -2.5661741 ]\n",
+      "Bhat2: [-0.34413527  0.56308905  0.02091295  0.12976128  1.73557801 -2.3578156\n",
+      "  0.08909389 -0.2142343  -2.56638478]\n",
+      "Bhat3: [-0.34422474  0.56307907  0.02091192  0.12976204  1.73549647 -2.35768923\n",
+      "  0.08908914 -0.21423632 -2.56617498]\n",
+      "k = -2\n",
+      "Bhat1: [-0.34502991  0.56298901  0.02090256  0.12976893  1.73476283 -2.35655149\n",
+      "  0.08904625 -0.21425403 -2.56428233]\n",
+      "Bhat2: [-0.34413527  0.56308905  0.02091295  0.12976128  1.73557801 -2.3578156\n",
+      "  0.08909389 -0.2142343  -2.56638478]\n",
+      "Bhat3: [-0.34502934  0.56298938  0.02090262  0.1297689   1.73476315 -2.3565527\n",
+      "  0.0890465  -0.21425446 -2.56428834]\n",
+      "k = -1\n",
+      "Bhat1: [-0.35300727  0.56209984  0.02081036  0.12983713  1.72748076 -2.345271\n",
+      "  0.08862386 -0.21443141 -2.54557585]\n",
+      "Bhat2: [-0.34413527  0.56308905  0.02091295  0.12976128  1.73557801 -2.3578156\n",
+      "  0.08909389 -0.2142343  -2.56638478]\n",
+      "Bhat3: [-0.35300805  0.56209992  0.02081038  0.12983711  1.72748048 -2.34527005\n",
+      "  0.08862387 -0.21443065 -2.54557693]\n",
+      "k = 0\n",
+      "Bhat1: [-0.42655958  0.55389068  0.01995974  0.13048406  1.65935133 -2.24011336\n",
+      "  0.08474526 -0.21571924 -2.37276978]\n",
+      "Bhat2: [-0.34413527  0.56308905  0.02091295  0.12976128  1.73557801 -2.3578156\n",
+      "  0.08909389 -0.2142343  -2.56638478]\n",
+      "Bhat3: [-0.42656058  0.55389088  0.01995978  0.13048405  1.65934991 -2.24011222\n",
+      "  0.08474548 -0.21572007 -2.37277208]\n",
+      "k = 1\n",
+      "Bhat1: [-0.81319576  0.50883049  0.01530243  0.1349431   1.24664881 -1.62342432\n",
+      "  0.06418864 -0.20668724 -1.42553162]\n",
+      "Bhat2: [-0.34413527  0.56308905  0.02091295  0.12976128  1.73557801 -2.3578156\n",
+      "  0.08909389 -0.2142343  -2.56638478]\n",
+      "Bhat3: [-0.81319549  0.50883057  0.01530246  0.13494309  1.24664861 -1.62342463\n",
+      "  0.06418867 -0.20668701 -1.42553283]\n",
+      "k = 2\n",
+      "Bhat1: [-0.87753188  0.44700011  0.0085201   0.15035944  0.50328026 -0.67302393\n",
+      "  0.03429972 -0.09483213 -0.31499578]\n",
+      "Bhat2: [-0.34413527  0.56308905  0.02091295  0.12976128  1.73557801 -2.3578156\n",
+      "  0.08909389 -0.2142343  -2.56638478]\n",
+      "Bhat3: [-0.87753197  0.44700016  0.00852012  0.15035943  0.50328009 -0.67302416\n",
+      "  0.03429969 -0.0948326  -0.31499626]\n",
+      "k = 3\n",
+      "Bhat1: [-0.21316098  0.40329528  0.00698443  0.16454164  0.0929447  -0.1400779\n",
+      "  0.01611391 -0.01245012 -0.02204906]\n",
+      "Bhat2: [-0.34413527  0.56308905  0.02091295  0.12976128  1.73557801 -2.3578156\n",
+      "  0.08909389 -0.2142343  -2.56638478]\n",
+      "Bhat3: [-0.213161    0.40329528  0.00698444  0.16454163  0.09294469 -0.1400779\n",
+      "  0.01611391 -0.01245008 -0.02204909]\n",
+      "k = 4\n",
+      "Bhat1: [-0.0169855   0.33111564  0.04211705  0.12901275  0.01969512 -0.01328575\n",
+      "  0.01974658  0.00037789  0.01698833]\n",
+      "Bhat2: [-0.34413527  0.56308905  0.02091295  0.12976128  1.73557801 -2.3578156\n",
+      "  0.08909389 -0.2142343  -2.56638478]\n",
+      "Bhat3: [-0.01698549  0.33111563  0.04211706  0.12901274  0.01969512 -0.01328575\n",
+      "  0.01974658  0.00037789  0.01698834]\n",
+      "k = 5\n",
+      "Bhat1: [ 0.00208809  0.15110206  0.10070133  0.05967429  0.00695273  0.00047448\n",
+      "  0.0104985   0.00084324  0.01027238]\n",
+      "Bhat2: [-0.34413527  0.56308905  0.02091295  0.12976128  1.73557801 -2.3578156\n",
+      "  0.08909389 -0.2142343  -2.56638478]\n",
+      "Bhat3: [ 0.00208809  0.15110207  0.10070134  0.0596743   0.00695274  0.00047449\n",
+      "  0.01049851  0.00084325  0.01027238]\n"
+     ]
+    }
+   ],
+   "source": [
+    "X = df[['female','educ','exper','tenure','married','female*married','numdep','nonwhite', 'intercept']]\n",
+    "Y = df[\"wage\"]\n",
+    "\n",
+    "for k in range(-5, 6):\n",
+    "    print(\"k =\",k)\n",
+    "    lmbda = 10**k\n",
+    "    #(i)\n",
+    "    Bhat1 = sol(np.array(X), np.array(Y), lmbda)\n",
+    "    model = sm.OLS(Y, X)\n",
+    "    Bhat2 = OLS.fit_regularized(model, lmbda, L1_wt=0).params\n",
+    "    Bhat3 = linear_model.Ridge(lmbda, fit_intercept=False).fit(X,Y).coef_\n",
+    "    print(\"Bhat1:\", Bhat1)\n",
+    "    print(\"Bhat2:\", Bhat2)\n",
+    "    print(\"Bhat3:\", Bhat3)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "At first our solution is identical to the statsmodel package. Over time the statsmodel package's answer diverges from ours and ours becomes quite identical to the scikitlearn solution.\n",
+    "\n",
+    "Huzzah!"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 4.20"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 49,
+   "metadata": {
+    "scrolled": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\n",
+      "Features that give optimal AIC:\n",
+      "['educ', 'exper', 'tenure', 'married', 'married*female']\n",
+      "\n",
+      "\n",
+      "Features that give optimal BIC:\n",
+      "['educ', 'tenure', 'married', 'married*female']\n",
+      "\n",
+      "k = -5\n",
+      "Index(['female', 'educ', 'exper', 'tenure', 'married', 'female*married',\n",
+      "       'numdep', 'nonwhite'],\n",
+      "      dtype='object')\n",
+      "k = -4\n",
+      "Index(['female', 'educ', 'exper', 'tenure', 'married', 'female*married',\n",
+      "       'numdep', 'nonwhite'],\n",
+      "      dtype='object')\n",
+      "k = -3\n",
+      "Index(['female', 'educ', 'exper', 'tenure', 'married', 'female*married',\n",
+      "       'numdep', 'nonwhite'],\n",
+      "      dtype='object')\n",
+      "k = -2\n",
+      "Index(['female', 'educ', 'exper', 'tenure', 'married', 'female*married',\n",
+      "       'numdep', 'nonwhite'],\n",
+      "      dtype='object')\n",
+      "k = -1\n",
+      "Index(['female', 'educ', 'exper', 'tenure', 'married', 'female*married'], dtype='object')\n",
+      "k = 0\n",
+      "Index(['educ', 'exper', 'tenure'], dtype='object')\n",
+      "k = 1\n",
+      "Index(['educ', 'exper'], dtype='object')\n",
+      "k = 2\n",
+      "Index(['exper'], dtype='object')\n",
+      "k = 3\n",
+      "Index([], dtype='object')\n",
+      "k = 4\n",
+      "Index([], dtype='object')\n",
+      "k = 5\n",
+      "Index([], dtype='object')\n"
+     ]
+    }
+   ],
+   "source": [
+    "X = df[['female','educ','exper','tenure','married','female*married','numdep','nonwhite']]\n",
+    "Y = df[\"wage\"]\n",
+    "print(\"\"\"\n",
+    "Features that give optimal AIC:\n",
+    "['educ', 'exper', 'tenure', 'married', 'married*female']\n",
+    "\"\"\")\n",
+    "print(\"\"\"\n",
+    "Features that give optimal BIC:\n",
+    "['educ', 'tenure', 'married', 'married*female']\n",
+    "\"\"\")\n",
+    "for k in range(-5, 6):\n",
+    "    print(\"k =\", k)\n",
+    "    lmbda = 10**k\n",
+    "    model = sm.OLS(Y, X)\n",
+    "    B1 = OLS.fit_regularized(model,alpha=lmbda, L1_wt=1).params\n",
+    "    print(B1[B1!=0].index)\n",
+    "    "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "(That was an implicit comparison)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 54,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\n",
+      "Features that give optimal AIC:\n",
+      "['educ', 'exper', 'tenure', 'married', 'married*female']\n",
+      "\n",
+      "\n",
+      "Features that give optimal BIC:\n",
+      "['educ', 'tenure', 'married', 'married*female']\n",
+      "\n",
+      "k = -5\n",
+      "['female' 'educ' 'exper' 'tenure' 'married' 'female*married' 'numdep'\n",
+      " 'nonwhite']\n",
+      "k = -4\n",
+      "['female' 'educ' 'exper' 'tenure' 'married' 'female*married' 'numdep'\n",
+      " 'nonwhite']\n",
+      "k = -3\n",
+      "['female' 'educ' 'exper' 'tenure' 'married' 'female*married' 'numdep'\n",
+      " 'nonwhite']\n",
+      "k = -2\n",
+      "['female' 'educ' 'exper' 'tenure' 'married' 'female*married' 'numdep'\n",
+      " 'nonwhite']\n",
+      "k = -1\n",
+      "['female' 'educ' 'exper' 'tenure' 'married' 'female*married' 'numdep']\n",
+      "k = 0\n",
+      "['educ' 'exper' 'tenure']\n",
+      "k = 1\n",
+      "[]\n",
+      "k = 2\n",
+      "[]\n",
+      "k = 3\n",
+      "[]\n",
+      "k = 4\n",
+      "[]\n",
+      "k = 5\n",
+      "[]\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(\"\"\"\n",
+    "Features that give optimal AIC:\n",
+    "['educ', 'exper', 'tenure', 'married', 'married*female']\n",
+    "\"\"\")\n",
+    "print(\"\"\"\n",
+    "Features that give optimal BIC:\n",
+    "['educ', 'tenure', 'married', 'married*female']\n",
+    "\"\"\")\n",
+    "features = np.array(['female','educ','exper','tenure','married','female*married','numdep','nonwhite'])\n",
+    "for k in range(-5, 6):\n",
+    "    print(\"k =\", k)\n",
+    "    lmbda = 10**k\n",
+    "    model = sm.OLS(Y, X)\n",
+    "    Beta = linear_model.Lasso(lmbda).fit(X,Y).coef_\n",
+    "    print(features[Beta!=0])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "(That was another implicit comparison)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 4.21"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 63,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(i): 0.345553188165\n",
+      "(ii): 0.353691631076\n",
+      "(iii) and (iv)\n",
+      "k = -5\n",
+      "Ridge: 0.345553193654\n",
+      "Lasso: 0.345554228515\n",
+      "k = -4\n",
+      "Ridge: 0.345553243059\n",
+      "Lasso: 0.345563551126\n",
+      "k = -3\n",
+      "Ridge: 0.345553737011\n",
+      "Lasso: 0.345653747943\n",
+      "k = -2\n",
+      "Ridge: 0.345558666678\n",
+      "Lasso: 0.346323758452\n",
+      "k = -1\n",
+      "Ridge: 0.345606990018\n",
+      "Lasso: 0.332495976712\n",
+      "k = 0\n",
+      "Ridge: 0.346003143145\n",
+      "Lasso: 0.261849182236\n",
+      "k = 1\n",
+      "Ridge: 0.346220375025\n",
+      "Lasso: -0.0337066244705\n",
+      "k = 2\n",
+      "Ridge: 0.331856513725\n",
+      "Lasso: -0.0337066244705\n",
+      "k = 3\n",
+      "Ridge: 0.283452471094\n",
+      "Lasso: -0.0337066244705\n",
+      "k = 4\n",
+      "Ridge: 0.163145685528\n",
+      "Lasso: -0.0337066244705\n",
+      "k = 5\n",
+      "Ridge: 0.0223653258297\n",
+      "Lasso: -0.0337066244705\n"
+     ]
+    }
+   ],
+   "source": [
+    "Y = df[\"wage\"]\n",
+    "#(i)\n",
+    "X = df[['female','educ','exper','tenure','married','female*married','numdep','nonwhite']]\n",
+    "model = linear_model.LinearRegression()\n",
+    "print(\"(i):\", np.mean(cross_val_score(model, X,Y,cv=7)))\n",
+    "#(ii)\n",
+    "X = df[['educ','tenure','married','female*married']]\n",
+    "model = linear_model.LinearRegression()\n",
+    "print(\"(ii):\",np.mean(cross_val_score(model, X,Y,cv=7)))\n",
+    "#(iii) and (iv)\n",
+    "print(\"(iii) and (iv)\")\n",
+    "X = df[['female','educ','exper','tenure','married','female*married','numdep','nonwhite']]\n",
+    "for k in range(-5, 6):\n",
+    "    print(\"k =\", k)\n",
+    "    lmbda = 10**k\n",
+    "    model1 = linear_model.Ridge(lmbda)\n",
+    "    model2 = linear_model.Lasso(lmbda)\n",
+    "    print(\"Ridge:\", np.mean(cross_val_score(model1, X,Y,cv=7)))\n",
+    "    print(\"Lasso:\", np.mean(cross_val_score(model2, X,Y,cv=7)))\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Once k >=1 the lasso has no parameters so the MSE we have there is nonsense. The best then appears to be Lasso for k=0.\n",
+    "\n",
+    "Huzzah!"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 4.22"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now do this for your own dataset y'all!"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.6.1"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
